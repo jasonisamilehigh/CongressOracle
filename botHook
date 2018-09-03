@@ -1,0 +1,40 @@
+'use strict';
+ 
+const functions = require('firebase-functions');
+const {WebhookClient} = require('dialogflow-fulfillment');
+// initialise DB connection
+const admin = require('firebase-admin');
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
+  databaseURL: 'http://congress-stats.firebaseio.com/',
+});
+ 
+process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
+ 
+exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
+  const agent = new WebhookClient({ request, response });
+  console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
+  console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
+ //function to request bio info on the db
+ function handleData(agent) {
+    const congressName = agent.parameters.congressName;
+    return admin.database().ref().once("value").then((snapshot) => {
+     var congressInfo = snapshot.child('Senators/' + congressName + '/biography').val(); 
+      agent.add(congressInfo + "\n  \n Tell me the first and last name of the next senator you'd like to learn about.");
+    });
+  }
+ function handleTweet(agent) {
+    const congressName = agent.parameters.congressName;
+    return admin.database().ref().once("value").then((snapshot) => {
+      var congressTweet = snapshot.child('Senators/' + congressName + '/twitter_handle').val(); 
+      agent.add(congressTweet);
+    });
+  }
+
+    // Run the proper function handler based on the matched Dialogflow intent name
+  let intentMap = new Map();
+  intentMap.set('name', handleData);
+  intentMap.set('name - custom', handleTweet);
+  agent.handleRequest(intentMap);
+  
+});
