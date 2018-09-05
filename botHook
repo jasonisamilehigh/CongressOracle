@@ -1,3 +1,5 @@
+// See https://github.com/dialogflow/dialogflow-fulfillment-nodejs
+// for Dialogflow fulfillment library docs, samples, and to report issues
 'use strict';
  
 const functions = require('firebase-functions');
@@ -6,7 +8,7 @@ const {WebhookClient} = require('dialogflow-fulfillment');
 const admin = require('firebase-admin');
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
-  databaseURL: 'http://congress-stats.firebaseio.com/',
+  databaseURL: 'YOUR URL GOES HERE',
 });
  
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
@@ -15,12 +17,12 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   const agent = new WebhookClient({ request, response });
   console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
   console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
- //function to request bio info on the db
+ 
  function handleData(agent) {
     const congressName = agent.parameters.congressName;
     return admin.database().ref().once("value").then((snapshot) => {
      var congressInfo = snapshot.child('Senators/' + congressName + '/biography').val(); 
-      agent.add(congressInfo + "\n  \n Tell me the first and last name of the next senator you'd like to learn about.");
+      agent.add(congressInfo + "\n  \n Tell me the first and last name of the next senator you'd like to learn about");
     });
   }
  function handleTweet(agent) {
@@ -38,3 +40,4 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
   agent.handleRequest(intentMap);
   
 });
+
